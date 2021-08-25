@@ -11,6 +11,7 @@ type LRU struct {
 	tail    uint
 }
 
+/// TODO: generics
 type Entry struct {
 	val  interface{}
 	prev uint
