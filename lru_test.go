@@ -1,4 +1,4 @@
-package lru
+package lru_go
 
 import (
 	"reflect"

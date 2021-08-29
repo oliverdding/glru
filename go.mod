@@ -1,3 +1,3 @@
-module github.com/oliverdding/glru
+module github.com/oliverdding/lru-go
 
 go 1.17
