@@ -1,38 +1,35 @@
 package lru
 
-type Iterator interface {
-	HasNext() bool
-	GetNext() uint
-}
-
 type LRU struct {
-	entries []Entry
+	entries []entry
 	head    uint
 	tail    uint
 }
 
 /// TODO: generics
-type Entry struct {
+type entry struct {
 	val  interface{}
 	prev uint
 	next uint
 }
 
+// New Create a fixed size of LRU Cache by cap
 func New(cap uint) *LRU {
 	return &LRU{
-		make([]Entry, 0, cap),
+		make([]entry, 0, cap),
 		0,
 		0,
 	}
 }
 
+// Insert Push a value into the LRU Cache; Return the dropped one or nil.
 func (lru *LRU) Insert(val interface{}) (ret interface{}) {
 	var idx uint
 	if lru.IsFull() {
 		idx = lru.popBack()
 		lru.entries[idx].val, ret = val, lru.entries[idx].val
 	} else {
-		lru.entries = append(lru.entries, Entry{
+		lru.entries = append(lru.entries, entry{
 			val,
 			0,
 			0,
@@ -45,6 +42,7 @@ func (lru *LRU) Insert(val interface{}) (ret interface{}) {
 
 type Judge func(interface{}) bool
 
+// Find find the specific value by the user's supplied Judge function
 func (lru *LRU) Find(judge Judge) (ret interface{}) {
 	if lru.touch(judge) {
 		return lru.entries[lru.head].val
@@ -52,18 +50,22 @@ func (lru *LRU) Find(judge Judge) (ret interface{}) {
 	return nil
 }
 
+// IsEmpty return if the LRU Cache is empty
 func (lru *LRU) IsEmpty() bool {
 	return len(lru.entries) == 0
 }
 
+// IsFull return if the LRU Cache is full
 func (lru *LRU) IsFull() bool {
 	return len(lru.entries) == cap(lru.entries)
 }
 
+// Len return counts of elements in this LRU Cache
 func (lru *LRU) Len() int {
 	return len(lru.entries)
 }
 
+// Cap return capacity of this LRU Cache
 func (lru *LRU) Cap() int {
 	return cap(lru.entries)
 }
@@ -76,11 +78,11 @@ func (lru *LRU) popBack() uint {
 	return oldTail
 }
 
-// touch touch the first elements int the cache that match the predicate and mark it as most-recently-used
+// touch touch the first element int the cache that match the predicate and mark it as most-recently-used
 func (lru *LRU) touch(judge Judge) bool {
-	iter := lru.Itor()
+	iter := lru.Iterator().(*iterator)
 	for iter.HasNext() {
-		i := iter.GetNext()
+		i := iter.getNext()
 		if judge(lru.entries[i].val) {
 			lru.indexTouch(i)
 			return true
@@ -126,29 +128,72 @@ func (lru *LRU) indexFront(idx uint) {
 	lru.head = idx
 }
 
-type LRUIterator struct {
-	cur   uint
-	isEnd bool
-	lru   *LRU
-}
+type (
+	Iterator interface {
+		HasNext() bool
+		GetNext() interface{}
+	}
+	iterator struct {
+		cur   uint
+		isEnd bool
+		lru   *LRU
+	}
+)
 
-func (lru *LRU) Itor() *LRUIterator {
-	return &LRUIterator{
+// Iterator return an iterator on this LRU Cache
+func (lru *LRU) Iterator() Iterator {
+	return &iterator{
 		lru.head,
 		false,
 		lru,
 	}
 }
 
-func (iter *LRUIterator) HasNext() bool {
+// HasNext return if this iterator has touch the tail
+func (iter *iterator) HasNext() bool {
 	return !iter.isEnd
 }
 
-func (iter *LRUIterator) GetNext() uint {
+func (iter *iterator) getNext() uint {
 	cur := iter.cur
 	if cur == iter.lru.tail {
 		iter.isEnd = true
 	}
 	iter.cur = iter.lru.entries[cur].next
 	return cur
+}
+
+// GetNext return next element's value in the LRU
+func (iter *iterator) GetNext() interface{} {
+	return iter.lru.entries[iter.getNext()].val
+}
+
+func (lru *LRU) get(idx uint) (*entry, bool) {
+	iter := lru.Iterator().(*iterator)
+	for iter.HasNext() {
+		if idx == 0 {
+			return &lru.entries[iter.getNext()], true
+		}
+		idx--
+	}
+	return nil, false
+}
+
+// Get return the element's value of specific index
+func (lru *LRU) Get(idx uint) interface{} {
+	entry, ok := lru.get(idx)
+	if !ok {
+		return nil
+	}
+	return entry.val
+}
+
+// ToArray return the array of elements in order
+func (lru *LRU) ToArray() (ret []interface{}) {
+	ret = make([]interface{}, 0, lru.Len())
+	iter := lru.Iterator().(*iterator)
+	for iter.HasNext() {
+		ret = append(ret, lru.entries[iter.getNext()].val)
+	}
+	return ret
 }

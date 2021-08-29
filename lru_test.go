@@ -25,6 +25,7 @@ func AssertArrayEqual(t *testing.T, a, b []interface{}) {
 
 func TestLen(t *testing.T) {
 	lru := New(4)
+	AssertEqual(t, 0, lru.Len())
 	lru.Insert(1)
 	AssertEqual(t, 1, lru.Len())
 	lru.Insert(2)
@@ -40,63 +41,35 @@ func TestLen(t *testing.T) {
 func TestInsert(t *testing.T) {
 	lru := New(4)
 	lru.Insert(4)
-	AssertEqual(t, 4, lru.entries[lru.head].val)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{4})
 	lru.Insert(8)
-	AssertEqual(t, 8, lru.entries[lru.head].val)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{8, 4})
 	lru.Insert(11)
-	AssertEqual(t, 11, lru.entries[lru.head].val)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{11, 8, 4})
 	lru.Insert(1)
-	AssertEqual(t, 1, lru.entries[lru.head].val)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{1, 11, 8, 4})
 	lru.Insert(5)
-	AssertEqual(t, 5, lru.entries[lru.head].val)
-	result := make([]interface{}, 0, 4)
-	itor := lru.Itor()
-	for itor.HasNext() {
-		result = append(result, lru.entries[itor.GetNext()].val)
-	}
-	AssertArrayEqual(t, result, []interface{}{5, 1, 11, 8})
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{5, 1, 11, 8})
 	lru.Insert(132)
-	result = make([]interface{}, 0, 4)
-	itor = lru.Itor()
-	for itor.HasNext() {
-		result = append(result, lru.entries[itor.GetNext()].val)
-	}
-	AssertArrayEqual(t, result, []interface{}{132, 5, 1, 11})
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{132, 5, 1, 11})
 }
 
 func TestFind(t *testing.T) {
 	lru := New(4)
 	lru.Insert(1)
-	AssertEqual(t, 1, lru.Len())
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{1})
 	lru.Insert(2)
-	AssertEqual(t, 2, lru.Len())
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{2, 1})
 	lru.Insert(3)
-	AssertEqual(t, 3, lru.Len())
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{3, 2, 1})
 	lru.Insert(4)
-	AssertEqual(t, 4, lru.Len())
-	result := make([]interface{}, 0, 4)
-	itor := lru.Itor()
-	for itor.HasNext() {
-		result = append(result, lru.entries[itor.GetNext()].val)
-	}
-	AssertArrayEqual(t, result, []interface{}{4, 3, 2, 1})
-	lru.Find(func(i interface{}) bool {
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{4, 3, 2, 1})
+	AssertEqual(t, lru.Find(func(i interface{}) bool {
 		return i.(int) == 3
-	})
-	result = make([]interface{}, 0, 4)
-	itor = lru.Itor()
-	for itor.HasNext() {
-		result = append(result, lru.entries[itor.GetNext()].val)
-	}
-	AssertArrayEqual(t, result, []interface{}{3, 4, 2, 1})
-
-	lru.Find(func(i interface{}) bool {
+	}), 3)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{3, 4, 2, 1})
+	AssertEqual(t, lru.Find(func(i interface{}) bool {
 		return i.(int) == 1
-	})
-	result = make([]interface{}, 0, 4)
-	itor = lru.Itor()
-	for itor.HasNext() {
-		result = append(result, lru.entries[itor.GetNext()].val)
-	}
-	AssertArrayEqual(t, result, []interface{}{1, 3, 4, 2})
+	}), 1)
+	AssertArrayEqual(t, lru.ToArray(), []interface{}{1, 3, 4, 2})
 }
