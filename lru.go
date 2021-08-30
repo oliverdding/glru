@@ -13,7 +13,7 @@ type entry struct {
 	next uint
 }
 
-// New Create a fixed size of LRU Cache by cap
+// New a fixed size of LRU Cache by cap
 func New(cap uint) *LRU {
 	return &LRU{
 		make([]entry, 0, cap),
@@ -22,7 +22,7 @@ func New(cap uint) *LRU {
 	}
 }
 
-// Insert Push a value into the LRU Cache; Return the dropped one or nil.
+// Insert a value into the LRU Cache; Return the dropped one or nil.
 func (lru *LRU) Insert(val interface{}) (ret interface{}) {
 	var idx uint
 	if lru.IsFull() {
@@ -42,7 +42,7 @@ func (lru *LRU) Insert(val interface{}) (ret interface{}) {
 
 type Judge func(interface{}) bool
 
-// Find find the specific value by the user's supplied Judge function
+// Find the specific value by the user's supplied Judge function
 func (lru *LRU) Find(judge Judge) (ret interface{}) {
 	if lru.touch(judge) {
 		return lru.entries[lru.head].val
@@ -78,7 +78,7 @@ func (lru *LRU) popBack() uint {
 	return oldTail
 }
 
-// touch touch the first element int the cache that match the predicate and mark it as most-recently-used
+// touch the first element int the cache that match the predicate and mark it as most-recently-used
 func (lru *LRU) touch(judge Judge) bool {
 	iter := lru.Iterator().(*iterator)
 	for iter.HasNext() {
@@ -91,7 +91,7 @@ func (lru *LRU) touch(judge Judge) bool {
 	return false
 }
 
-// indexTouch
+// indexTouch update the given index to the first element
 func (lru *LRU) indexTouch(idx uint) {
 	if idx != lru.head {
 		lru.indexRemove(idx)
@@ -99,7 +99,7 @@ func (lru *LRU) indexTouch(idx uint) {
 	}
 }
 
-// indexRemove
+// indexRemove remove the given index from the double-order list
 func (lru *LRU) indexRemove(idx uint) {
 	prev := lru.entries[idx].prev
 	next := lru.entries[idx].next
@@ -117,7 +117,7 @@ func (lru *LRU) indexRemove(idx uint) {
 	}
 }
 
-// indexFront update the head of the LRU to the given index
+// indexFront set the given index to the first element
 func (lru *LRU) indexFront(idx uint) {
 	if len(lru.entries) == 1 {
 		lru.tail = idx
@@ -154,6 +154,7 @@ func (iter *iterator) HasNext() bool {
 	return !iter.isEnd
 }
 
+// getNext return the next element's index
 func (iter *iterator) getNext() uint {
 	cur := iter.cur
 	if cur == iter.lru.tail {
@@ -168,6 +169,7 @@ func (iter *iterator) GetNext() interface{} {
 	return iter.lru.entries[iter.getNext()].val
 }
 
+// get specific index's entry and if it exists
 func (lru *LRU) get(idx uint) (*entry, bool) {
 	iter := lru.Iterator().(*iterator)
 	for iter.HasNext() {
